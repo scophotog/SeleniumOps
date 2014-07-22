@@ -1,0 +1,18 @@
+{
+  "capabilities":
+    [
+      {
+        "browserName": "firefox",
+        "maxInstances": 2,
+        "seleniumProtocol": "WebDriver"
+      }
+    ],
+  "configuration":
+    {
+      "registerCycle":5000,
+      "register":true,
+      "cleanUpCycle":5000,
+      "timeout":30000,
+      "maxSession":2
+    }
+}

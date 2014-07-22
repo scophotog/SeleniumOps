@@ -1,0 +1,76 @@
+#!/bin/bash
+#chkconfig: 345 95 50
+#description: Starts fluxbox for a given number of instances
+
+# source function library
+. /etc/init.d/functions
+. ./seleniumops.conf
+
+DESC="Fluxbox Window Manager"
+PROG="fluxbox"
+DAEMON=/usr/bin/$PROG
+USER=fluxd
+PIDFILE=/var/run/$PROG
+DAEMON_ARGS="-screen 0"
+DISPLAY=$STARTING_DISPLAY
+RETVAL=0
+
+start() {
+    shopt -s nullglob
+    set -- "$PIDFILE"*.pid
+    if [ "$#" -gt 0 ];
+      then
+        echo -n "$DESC is already running"
+        failure
+        echo
+        exit 2
+    else
+      for (( i=1; i<=$INSTANCES; i++ ))
+      do
+          echo -n "Starting $DESC on Display $DISPLAY"
+          daemon --user=$USER "DISPLAY=:$DISPLAY".0" $DAEMON -display :$DISPLAY".0" $DAEMON_ARGS 2>/dev/null &"
+          echo
+          ps -u $USER -o pid,user,command | grep "$PROG -display :$DISPLAY".0" $DAEMON_ARGS" | awk {'print $1'} > "$PIDFILE""$DISPLAY".pid
+          let "DISPLAY-=1"
+      done
+    fi
+    RETVAL=$?
+    return $RETVAL
+}
+
+stop() {
+    shopt -s nullglob
+    set -- "$PIDFILE"*.pid
+    if [ "$#" -gt 0 ];
+    then
+      for f in "$PIDFILE"*.pid
+      do
+        echo -n "Stopping $DESC: " $f
+        killproc -p $f -d 10 "$DAEMON"
+        echo
+      done
+    else
+      echo -n "$DESC is not running"
+      failure
+      echo
+      return 2
+    fi
+}
+
+case "$1" in
+start)
+  start
+  ;;
+stop)
+  stop
+  ;;
+status)
+  status $PROG
+  ;;
+*)
+  echo "Usage: `basename $0` {start|stop|status}"
+  exit 1
+  ;;
+esac
+exit $?
+

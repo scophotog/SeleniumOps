@@ -1,0 +1,84 @@
+#!/bin/bash
+# selenium-node - this script starts and stops the selenium node
+#
+# chkconfig:   - 2345 85 15
+# description: Selenium Node is a process that connects to Selenium Grid. It will start 2 nodes to run on the server
+# processname: selenium_node
+# pidfile:     /var/run/selenium/selenium_node.pid
+
+# Source function library.
+. /etc/init.d/functions
+. ./seleniumops.conf
+
+DESC="Selenium Node"
+JAVA=`which java`
+DAEMON=$JAVA
+ERROR_LOG=$LOG_DIR/selenium_node_error
+STD_LOG=$LOG_DIR/selenium_node_std
+PIDFILE=/var/run/selenium_node
+HOST=`hostname`
+DISPLAY=$STARTING_DISPLAY
+SELENIUM_PORT=$SELENIUM_START_PORT
+
+start() {
+  shopt -s nullglob
+  set -- "$PIDFILE"*.pid
+  if [ "$#" -gt 0 ];
+  then
+    echo -n "$DESC is already running"
+    failure
+    echo
+    exit 2
+  else
+    for (( i=1; i<=$INSTANCES; i++ ))
+    do
+      echo -n "Starting Selenium node $i on port $SELENIUM_PORT..."
+      if [ "$LOGGING" = "true" ]; then
+        daemon --user "$USER" "DISPLAY=:$DISPLAY $JAVA -jar $SELENIUM -role node -hub $SELENIUM_HUB"/grid/register" -port $SELENIUM_PORT -host $HOST -nodeConfig $NODE_CFG > /data/selenium/log$i 2>/data/selenium/err$1 &"
+      else
+        daemon --user "$USER" "DISPLAY=:$DISPLAY $JAVA -jar $SELENIUM -role node -hub $SELENIUM_HUB"/grid/register" -port $SELENIUM_PORT -host $HOST -nodeConfig $NODE_CFG > /dev/null 2>&1 &"
+      fi
+      echo
+      ps -u $USER -o pid,user,command | grep $SELENIUM_PORT | awk {'print $1'} > "$PIDFILE""$i".pid
+      let "DISPLAY-=1"
+      let "SELENIUM_PORT+=1"
+      sleep 5
+    done
+  fi
+}
+
+stop() {
+  shopt -s nullglob
+  set -- "$PIDFILE"*.pid
+  if [ "$#" -gt 0 ];
+    then
+      for f in "$PIDFILE"*.pid
+      do
+          echo -n "Stopping Selenium Node: " $f
+          killproc -p $f -d 10 "$DAEMON"
+          echo
+      done
+    else
+      echo -n "Selenium Nodes are not running"
+      failure
+      echo
+      return 2
+  fi
+}
+
+case "$1" in
+    start)
+        $1
+        ;;
+    stop)
+        $1
+        ;;
+    restart)
+        stop
+        start
+        ;;
+    *)
+        echo "Usage: $SELF start|stop|restart"
+        exit 1
+    ;;
+esac

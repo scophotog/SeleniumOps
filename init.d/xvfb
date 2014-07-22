@@ -1,0 +1,30 @@
+#!/bin/bash
+#chkconfig: 345 95 50
+#description: Starts xvfb on display 99
+
+DESC="Xvfb Virtual Framebuffer Server"
+PROG="Xvfb"
+PROG_PATH=/usr/bin/$PROG
+DISPLAY_NUMBER1=98
+DISPLAY_NUMBER2=99
+
+PROG_OPTIONS1=":$DISPLAY_NUMBER1 -screen 0 1280x1024x16 -ac -pn -noreset"
+PROG_OPTIONS2=":$DISPLAY_NUMBER2 -screen 0 1280x1024x16 -ac -pn -noreset"
+
+if [ -z "$1" ]; then
+echo "`basename $0` {start|stop}"
+   exit
+fi
+
+case "$1" in
+start)
+    echo "Starting: $DESC "
+    $PROG_PATH $PROG_OPTIONS1  2>/dev/null &
+    $PROG_PATH $PROG_OPTIONS2  2>/dev/null &
+;;
+
+stop)
+    echo "Stopping: $DESC "
+    killall $PROG
+;;
+esac

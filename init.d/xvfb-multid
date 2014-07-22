@@ -1,0 +1,75 @@
+#!/bin/bash
+#chkconfig: 345 95 50
+#description: Start multiple Xvfb 
+
+. /etc/init.d/functions
+. ./seleniumops.conf
+
+DESC="Xvfb Virtual Framebuffer Server"
+PROG="Xvfb"
+DAEMON=/usr/bin/$PROG
+PIDFILE=/var/run/$PROG
+SINGLE_PID="$PIDFILE".pid
+DISPLAY=$STARTING_DISPLAY
+
+DAEMON_ARGS="-screen 0 $XVFB_SCREEN_DIM -ac -pn -noreset 2>/dev/null"
+
+start() {
+    shopt -s nullglob
+    set -- "$PIDFILE"*.pid
+    if [ "$#" -gt 0 ];
+      then
+          echo -n "$DESC is already running"
+          failure
+          echo
+          exit 2
+      else
+          for (( i=1; i<=$INSTANCES; i++ ))
+          do
+              echo -n "Starting $DESC Display $DISPLAY"
+              DISPLAY=:$DISPLAY
+              daemon --user=$USER "$DAEMON $DISPLAY $DAEMON_ARGS &"
+              echo
+              ps -u $USER -o pid,user,command | grep "$PROG $DISPLAY" | awk {'print $1'} > "$PIDFILE""$DISPLAY".pid
+              let "DISPLAY-=1"
+          done
+        fi
+    RETVAL=$?
+    return $RETVAL
+}
+
+stop() {
+  shopt -s nullglob
+  set -- "$PIDFILE"*.pid
+  if [ "$#" -gt 0 ]; 
+    then
+        for f in "$PIDFILE"*.pid
+        do
+            echo -n "Stopping Display: " $f
+            killproc -p $f -d 10 "$DAEMON"
+            echo
+        done
+    else
+       echo -n "No displays running"
+       failure
+       echo
+       return 2
+  fi
+}
+
+case "$1" in
+start)
+    start
+    ;;
+stop)
+    stop
+    ;;
+status)
+    status $PROG
+    ;;
+*)
+    echo "Usage: `basename $0` {start|stop|status}"
+    exit 1
+    ;;
+esac
+exit $?
