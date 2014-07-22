@@ -31,7 +31,3 @@ In the following order run:
 - `/etc/init.d/xvfb-multid start`
 - `/etc/init.d/fluxboxd start`
 - `/etc/init.d/selenium-multinode start`
-
-###To do
-
-- Combine all the init files to one start up script
