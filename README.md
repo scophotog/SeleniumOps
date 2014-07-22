@@ -1,4 +1,4 @@
-##Selenium Node
+##SeleniumOps
 
 These are the scripts responsible for starting/stopping selenium node and selenium grid servers.
 
